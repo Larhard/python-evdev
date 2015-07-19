@@ -359,10 +359,20 @@ class InputDevice(object):
 
 
 class VirtualInputDevice(InputDevice):
+    def __read_loop_blocking(self):
+        while True:
+            event = self.read_one()
+            if event is None:
+                break
+            yield event
+
     def __init__(self, dev, bustype=0, vendor=0, product=0, version=0, name=None, phys=None,
             capabilities=None, o_flags=os.O_RDWR | os.O_NONBLOCK):
 
         capabilities = capabilities or {}
+
+        if not o_flags & os.O_NONBLOCK:
+            self.read_loop = self.__read_loop_blocking
 
         #: Path to input device.
         self.fn = dev
