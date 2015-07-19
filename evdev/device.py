@@ -356,3 +356,37 @@ class InputDevice(object):
             return [(ecodes.KEY[k] if k in ecodes.KEY else '?', k) for k in active_keys]
 
         return active_keys
+
+
+class VirtualInputDevice(InputDevice):
+    def __init__(self, dev, bustype=0, vendor=0, product=0, version=0, name=None, phys=None,
+            capabilities=None, o_flags=os.O_RDWR | os.O_NONBLOCK):
+
+        capabilities = capabilities or {}
+
+        #: Path to input device.
+        self.fn = dev
+
+        #: A non-blocking file descriptor to the device file.
+        self.fd = os.open(dev, o_flags)
+
+        # Returns (bustype, vendor, product, version, name, phys, capabilities).
+        info_res = (bustype, vendor, product, version, name, phys)
+
+        #: A :class:`DeviceInfo <evdev.device.DeviceInfo>` instance.
+        self.info = DeviceInfo(*info_res[:4])
+
+        #: The name of the event device.
+        self.name = info_res[4]
+
+        #: The physical topology of the device.
+        self.phys = info_res[5]
+
+        #: The evdev protocol version.
+        self.version = _input.ioctl_EVIOCGVERSION(self.fd)
+
+        #: The raw dictionary of device capabilities - see `:func:capabilities()`.
+        self._rawcapabilities = capabilities
+
+        #: The number of force feedback effects the device can keep in its memory.
+        self.ff_effects_count = _input.ioctl_EVIOCGEFFECTS(self.fd)
